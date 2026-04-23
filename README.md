@@ -1,7 +1,9 @@
 <div align="center">
 
-# 💉 Non-Invasive Smart Blood Glucose Monitoring System
-**Painless. Needle-free. Fully offline. Empowering patients and clinics with real-time glucose insights.**
+# 🩸 Non-Invasive Smart Blood Glucose Monitoring System
+### Using Optical Sensors and Machine Learning
+
+**Painless. Needle-free. Embedded AI. Empowering patients with real-time glucose insights — no blood required.**
 
 </div>
 
@@ -9,11 +11,25 @@
 
 ## 📖 Overview
 
-**GlucoTrack** is a wearable health device paired with a Flutter mobile application that estimates blood glucose levels without a single needle. Using photoplethysmography (PPG), infrared and red light pass through the fingertip and the reflected signal is analyzed to extract physiological features that correlate with blood glucose concentration.
+The **Non-Invasive Smart Blood Glucose Monitoring System** is a wearable embedded healthcare device that estimates blood glucose levels without any finger-prick or blood sampling. Using **photoplethysmography (PPG)**, infrared and red light are emitted into the fingertip through the **MAX30102 optical sensor**, and the reflected signal is processed to extract physiological features that correlate with blood glucose concentration.
 
-The hardware is built around an **ESP32-C3 Mini** microcontroller and a **MAX30102** optical sensor, communicating wirelessly with the app over **Bluetooth Low Energy**. Everything runs completely offline — no internet, no cloud, no subscription.
+A **machine learning regression model** runs directly on the **ESP32 microcontroller**, delivering real-time glucose predictions with personalized calibration — entirely offline, no cloud required.
 
-> 🎬 **[Watch Video Demo →](https://1drv.ms/v/c/47438efdb3ee2559/IQA0FAMxoAtWQqJQIaDrOJIxAU9L4il1BBElhhdxh0lofC8?e=2vuCNs)**
+> 🎬 **[Watch Video Demo →](YOUR_VIDEO_LINK_HERE)**
+
+---
+
+## 📸 Prototype
+
+<div align="left">
+
+<img width="350" height="450" alt="GlucoTrack Prototype" src="https://github.com/user-attachments/assets/0eb1def8-a7f4-4132-a822-81c77b1a6261" />
+
+<br><br>
+
+*The wearable device displaying a real-time reading: **100 mg/dL (ELEVATED)** — HR: 108 bpm · SpO₂: 98%*
+
+</div>
 
 ---
 
@@ -21,35 +37,65 @@ The hardware is built around an **ESP32-C3 Mini** microcontroller and a **MAX301
 
 | # | Problem |
 |---|---------|
-| 1 | Painful daily fingerstick tests creating a psychological barrier to consistent glucose monitoring |
+| 1 | Painful daily finger-prick tests creating a psychological barrier to consistent glucose monitoring |
 | 2 | Ongoing cost and medical waste from disposable lancets and test strips |
 | 3 | Skipped readings due to monitoring friction, leading to poor glucose control |
-| 4 | Lack of accessible, affordable continuous monitoring tools for diabetic patients |
-| 5 | No fast multi-patient workflow tool for clinic nurses to screen glucose at scale |
+| 4 | Lack of accessible, affordable monitoring tools for diabetic patients in developing regions |
+| 5 | Inter-subject variability making one-size-fits-all models unreliable for real users |
 
 ---
 
 ## ✨ Core Features
 
-### 🔬 Measurement Capabilities
+### 🤖 AI & Signal Processing Capabilities
 
-| Metric | Range | Method |
-|---|---|---|
-| 🩸 **Blood Glucose** | 40–400 mg/dL | Ridge Regression on 3 PPG features |
-| ❤️ **Heart Rate** | 40–190 BPM | Inter-beat interval detection |
-| 🫁 **SpO₂** | 0–100% | Red/IR ratio (R-ratio method) |
-| 📈 **Glucose Trend** | Rising / Stable / Falling | Median-smoothed linear regression |
+| Feature | Description |
+|---|---|
+| 📡 **PPG Signal Acquisition** | Real-time optical signal capture from the MAX30102 sensor (IR 880nm + Red 660nm) |
+| 🔧 **Noise Filtering** | Adaptive preprocessing to remove motion artifacts and baseline drift |
+| 🧪 **Feature Extraction** | Derives IR Peak Amplitude, SDPPG b/a Ratio, and AC/DC Ratio from the waveform |
+| 📐 **Feature Engineering** | Polynomial expansion to model nonlinear PPG-glucose relationships |
+| 🧠 **ML Glucose Prediction** | Ridge Regression model trained and validated for real-time glucose estimation |
+| 🎯 **Personalized Calibration** | Per-user offset correction converging after ~4–5 paired reference readings |
+| 📊 **Performance Evaluation** | Validated using MAE, R² Score, and cross-validation across subjects |
 
-### 📱 App Capabilities
+### ⚙️ System Capabilities
 
-- 🔵 Real-time BLE streaming from ESP32-C3 + MAX30102 sensor
-- 🩸 Glucose classification — HYPO / NORMAL / ELEVATED / HIGH with trend arrow
-- 📊 History charts with trend analysis across the last 5 readings
-- 🏥 Dual app modes — Personal (patient self-monitoring) and Clinic (nurse-operated)
-- 📄 PDF report export with full reading history
-- 🌙 Full dark mode support on every screen
-- 🌐 Arabic RTL and English with complete i18n support
-- 💾 100% offline — all data stored locally, nothing leaves the device
+- 🔬 Real-time glucose estimation on embedded hardware (no cloud, no internet)
+- 🩸 Glucose classification — HYPO / NORMAL / ELEVATED / HIGH with range feedback
+- 📈 Trend tracking — Rising / Stable / Falling based on sequential readings
+- 🖥️ OLED display for instant on-device result feedback
+- 💾 Local data logging via EEPROM (up to 194 records stored on-device)
+- 🔋 Portable battery-powered operation (~10–15 hours per charge)
+
+---
+
+## 🔬 Machine Learning Pipeline
+
+The AI pipeline is the core of the system, designed and implemented entirely for embedded real-time deployment.
+
+### Extracted Features
+
+| Feature | Description |
+|---|---|
+| **IR Peak Amplitude** | Strength of the pulsatile signal component |
+| **SDPPG b/a Ratio** | Shape descriptor from the second derivative of the PPG wave |
+| **AC/DC Ratio** | Pulsatile component relative to the DC baseline |
+
+### Model
+
+| Model | Role |
+|---|---|
+| **Ridge Regression** *(primary)* | Main prediction model — regularized linear regression with polynomial features |
+| Random Forest | Comparison baseline |
+| Support Vector Regression | Comparison baseline |
+| Gradient Boosting | Comparison baseline |
+
+### Evaluation Metrics
+
+- **Mean Absolute Error (MAE)** — average prediction error in mg/dL
+- **R² Score** — explained variance of the model
+- **Cross-validation error** — generalization across different subjects
 
 ---
 
@@ -59,99 +105,69 @@ The hardware is built around an **ESP32-C3 Mini** microcontroller and a **MAX301
 |---|---|---|
 | 🔵 **HYPO** | < 70 mg/dL | Hypoglycaemic — low blood sugar |
 | 🟢 **NORMAL** | 70–100 mg/dL | Normal fasting range |
-| 🟡 **ELEVATED** | 100–126 mg/dL | Pre-diabetic range or post-meal |
+| 🟡 **ELEVATED** | 100–126 mg/dL | Pre-diabetic or post-meal range |
 | 🔴 **HIGH** | > 126 mg/dL | Diabetic range or post-meal peak |
 
 ---
 
-## 🖥️ App Modes
-
-| Mode | Users | Description |
-|---|---|---|
-| 👤 **Personal** | Patients | 5-tab navigation — dashboard, history, scan, reports, settings |
-| 🏥 **Clinic** | Nurses / Medical Staff | Multi-patient workflow, fast scan-and-assign, per-patient history |
-
----
-
-## ⚙️ How It Works
-
-The MAX30102 sensor emits infrared (880nm) and red (660nm) light into the fingertip. Three features are extracted from the reflected waveform and fed into a trained regression model:
-
-1. **IR Peak Amplitude** — strength of the pulsatile signal
-2. **SDPPG b/a Ratio** — shape feature from the second derivative of the PPG wave
-3. **AC/DC Ratio** — pulsatile component relative to the DC baseline
-
-A **personal calibration step** corrects the systematic offset between the model's raw output and the user's true glucose level. Calibration converges to stable accuracy after 4–5 paired readings with a standard fingerstick glucometer.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| 📱 Framework | Flutter 3.x |
-| 🏗️ Architecture | Feature-First MVVM |
-| 🔄 State Management | Riverpod 2.x (AsyncNotifier / Notifier) |
-| 🗄️ Database | sqflite + path (local only) |
-| ⚙️ Settings | shared_preferences |
-| 🔵 BLE | flutter_blue_plus |
-| 📊 Charts | fl_chart |
-| 📄 PDF | pdf + printing (compute isolate) |
-| 📐 Responsive UI | flutter_screenutil |
-| 🧭 Navigation | go_router |
-| 🌐 i18n | intl (Arabic RTL + English) |
-
----
-
-## 🔧 Hardware
+## 🛠️ Hardware
 
 | Component | Details |
 |---|---|
-| 🧠 Microcontroller | ESP32-C3 Mini (RISC-V, 160MHz, 400KB SRAM) |
-| 💡 Sensor | MAX30102 (IR 880nm + Red 660nm dual LED) |
-| 🖥️ Display | SSD1306 0.96" OLED 128×64 |
-| 🔋 Battery | 220mAh LiPo + TP4056 charger (~10–15 hrs) |
-| 🔌 Charging | USB-C via TP4056 module (30–45 min) |
-| 💾 Storage | 4KB EEPROM — calibration + data log (up to 194 records) |
+| 🧠 Microcontroller | ESP32 (dual-core, Wi-Fi/BLE capable) |
+| 💡 Optical Sensor | MAX30102 (IR 880nm + Red 660nm dual LED) |
+| 🖥️ Display | OLED Display (real-time result feedback) |
+| 🔋 Battery | LiPo Battery + TP4056 Charging Module (~10–15 hrs) |
+| 💾 Storage | EEPROM — calibration data & local reading log |
 
 ---
 
-## 🚀 Development Phases
+## 📊 Challenges & Solutions
 
-1. **Project Setup** — theme, router, DB schema, app skeleton
-2. **BLE Layer** — mock + real hardware scan flow, BLE service abstraction
-3. **Readings Feature** — model, repository, provider, all views
-4. **Clinic Mode** — patient management, sessions, fast workflow
-5. **Reports & Charts** — PDF export, history charts, trend engine
-6. **i18n & Polish** — Arabic RTL, dark mode audit, final QA
-
----
-
-## 🎯 Architecture Rules
-
-- ✅ No backend, no Firebase, no REST API, no cloud — 100% on-device
-- ✅ Every DB call is async/await — never synchronous
-- ✅ BLE uses streams only — never `Timer.periodic` polling
-- ✅ PDF always runs in a `compute()` isolate — UI never blocks
-- ✅ Colors from `Theme.of(context).colorScheme` — never hardcoded
-- ✅ Sizes via `.h` / `.w` / `.sp` — never hardcoded px values
-- ✅ Zero business logic inside any `build()` method
-
----
-
-## 👥 Team
-
-| Name | Name (Arabic) |
+| Challenge | Solution |
 |---|---|
-| Ahmed Bahaa-Eldein Naoman | أحمد بهاء الدين نعمان |
+| Signal noise and motion artifacts affecting PPG quality | Robust adaptive preprocessing and filtering algorithms |
+| Nonlinear relationship between PPG features and glucose levels | Ridge Regression with polynomial feature expansion |
+| Inter-subject physiological variability | Personalized user-level calibration using paired reference readings |
+| Embedded hardware resource constraints | Lightweight, optimized ML model for real-time ESP32 deployment |
 
-> 👨‍🏫 **Supervised by:** Dr. [Supervisor Name]
+---
+
+## 🚀 Implementation Plan
+
+1. **Literature Review & Requirement Analysis** — Study existing PPG-glucose research and define system specs
+2. **Hardware Design & Procurement** — Assemble ESP32, MAX30102, OLED, and power circuit
+3. **Data Collection** — Acquire PPG signals paired with reference glucometer readings
+4. **Signal Processing** — Implement filtering, feature extraction, and polynomial engineering pipeline
+5. **ML Model Training** — Train, compare, and validate regression models; select best performer
+6. **Calibration System** — Implement and test the personalized per-user calibration mechanism
+7. **Embedded Deployment** — Port optimized model to ESP32 for real-time inference
+8. **Testing & Validation** — Evaluate accuracy, stability, and system performance end-to-end
+
+---
+
+## 🎯 Objectives
+
+- ✅ Eliminate the need for painful invasive glucose tests
+- ✅ Deliver real-time embedded AI inference with no cloud dependency
+- ✅ Achieve practical glucose estimation accuracy using PPG-based ML
+- ✅ Handle inter-subject variability through personalized calibration
+- ✅ Produce a low-cost, portable prototype suitable for widespread use
+
+---
+
+## 🌍 Applications
+
+- Home healthcare and self-monitoring for diabetic patients
+- Clinic screening and patient triage workflows
+- Wearable medical IoT devices
+- Research platform for non-invasive biosensing
 
 ---
 
 ## ⚠️ Disclaimer
 
-This device is a **research prototype** developed for academic and educational purposes. It has not been evaluated or certified by any medical regulatory authority. Glucose estimates should **never** be used to make medical decisions, adjust medication, or replace clinical laboratory testing. Always consult a qualified healthcare professional.
+This system is a **research prototype** developed for academic and educational purposes. It has not been evaluated or certified by any medical regulatory authority. Glucose estimates must **never** be used to make clinical decisions, adjust medication, or replace laboratory testing. Always consult a qualified healthcare professional.
 
 ---
 
