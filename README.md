@@ -15,7 +15,7 @@ The **Non-Invasive Smart Blood Glucose Monitoring System** is a wearable embedde
 
 A **machine learning regression model** runs directly on the **ESP32 microcontroller**, delivering real-time glucose predictions with personalized calibration — entirely offline, no cloud required.
 
-> 🎬 Video Demo : **[Watch Video Demo](YOUR_VIDEO_LINK_HERE)**
+> 🎬 Video Demo : **[Watch Video Here](YOUR_VIDEO_LINK_HERE)**
 
 ---
 
