@@ -9,6 +9,18 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get commonSomethingWentWrong => 'حدث خطأ ما. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get routeErrorTitle => 'الصفحة غير موجودة';
+
+  @override
+  String get routeErrorMessage => 'الشاشة التي تبحث عنها غير موجودة.';
+
+  @override
+  String get routeErrorGoHome => 'العودة';
+
+  @override
   String get glucoseZoneHypoglycemia => 'نقص سكر الدم';
 
   @override
@@ -99,6 +111,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get modeSelectionClinicSubtitle => 'بإشراف تمريضي لعدة مرضى';
+
+  @override
+  String get modeSelectionClinicComingSoon => 'قريبًا';
 
   @override
   String get clinicNavDashboard => 'لوحة التحكم';
@@ -434,6 +449,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get patientRegSaveContinue => 'حفظ ومتابعة';
+
+  @override
+  String get patientRegPhoneAlreadyRegistered =>
+      'رقم الهاتف هذا مسجل بالفعل لمريض آخر.';
 
   @override
   String get profileUnknownName => 'غير معروف';

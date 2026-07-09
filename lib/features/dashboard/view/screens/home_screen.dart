@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glucotrack/core/ble/glucose_estimator_v10/ble_provider.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/utils/glucose_zone.dart';
 import '../../../../features/measurements/models/measurement_model.dart';
@@ -74,7 +76,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const Spacer(),
                   GestureDetector(
-                    onTap: () {},
+                    onTap: () => context.goNamed(Routes.personalReadings),
                     child: Text(
                       l10n.homeViewAll,
                       style: TextStyle(
@@ -626,6 +628,12 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.homeMeasurementSaved)));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.commonSomethingWentWrong)));
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }

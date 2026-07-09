@@ -6,36 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/app_mode_provider.dart';
-import '../../patients/models/patient_model.dart';
-import '../../patients/providers/patient_provider.dart';
-
-// ── Personal patient ID ────────────────────────────────────────────────────
-
-/// The SQLite ID of the personal-mode patient.
-/// Seeded from SharedPreferences in main.dart.
-/// Updated immediately after first registration.
-final personalPatientIdProvider = StateProvider<int?>((ref) => null);
-
-// ── Personal patient record ────────────────────────────────────────────────
-
-/// Loads and caches the personal patient from SQLite.
-/// Refreshed whenever [personalPatientIdProvider] changes.
-final personalPatientProvider = FutureProvider.autoDispose<PatientModel?>((
-  ref,
-) async {
-  final id = ref.watch(personalPatientIdProvider);
-  if (id == null) return null;
-  return ref.read(patientRepositoryProvider).getPatientById(id);
-});
-
-// ── Save personal patient ID ───────────────────────────────────────────────
-
-/// Called once after first-run registration to persist and seed the ID.
-Future<void> savePersonalPatientId(WidgetRef ref, int id) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setInt(AppConstants.personalPatientIdKey, id);
-  ref.read(personalPatientIdProvider.notifier).state = id;
-}
+import '../../measurements/providers/measurement_provider.dart';
 
 // ── Calibration offset (background / automatic only) ──────────────────────
 //
@@ -195,5 +166,5 @@ Future<void> resetAppMode(WidgetRef ref) async {
   await prefs.remove(AppConstants.appModeKey);
   await prefs.remove(AppConstants.personalPatientIdKey);
   ref.read(appModeProvider.notifier).state = null;
-  ref.read(personalPatientIdProvider.notifier).state = null;
+  ref.invalidate(personalPatientIdProvider);
 }

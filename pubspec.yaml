@@ -25,6 +25,7 @@ dependencies:
 
   # BLE
   flutter_blue_plus: ^1.36.8
+  permission_handler: ^11.3.1
 
   # Charts
   fl_chart: ^0.68.0

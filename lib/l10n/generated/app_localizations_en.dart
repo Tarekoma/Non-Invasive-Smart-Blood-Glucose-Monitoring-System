@@ -9,6 +9,20 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get commonSomethingWentWrong =>
+      'Something went wrong. Please try again.';
+
+  @override
+  String get routeErrorTitle => 'Page not found';
+
+  @override
+  String get routeErrorMessage =>
+      'The screen you\'re looking for doesn\'t exist.';
+
+  @override
+  String get routeErrorGoHome => 'Go back';
+
+  @override
   String get glucoseZoneHypoglycemia => 'Hypoglycemia';
 
   @override
@@ -96,6 +110,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modeSelectionClinicSubtitle => 'Nurse-operated, multiple patients';
+
+  @override
+  String get modeSelectionClinicComingSoon => 'Coming soon';
 
   @override
   String get clinicNavDashboard => 'Dashboard';
@@ -431,6 +448,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientRegSaveContinue => 'Save & Continue';
+
+  @override
+  String get patientRegPhoneAlreadyRegistered =>
+      'This phone number is already registered to another patient.';
 
   @override
   String get profileUnknownName => 'Unknown';

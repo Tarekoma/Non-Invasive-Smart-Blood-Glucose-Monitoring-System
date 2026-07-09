@@ -32,9 +32,18 @@ class DatabaseHelper {
     return openDatabase(
       fullPath,
       version: DbConstants.dbVersion,
+      onConfigure: _onConfigure,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
+  }
+
+  // ── Pragmas ─────────────────────────────────────────────────────
+  // SQLite does not enforce FOREIGN KEY constraints unless explicitly
+  // told to for each connection — without this, measurements.patient_id's
+  // "ON DELETE CASCADE" is silently ignored.
+  Future<void> _onConfigure(Database db) async {
+    await db.execute('PRAGMA foreign_keys = ON');
   }
 
   // ── Schema creation ────────────────────────────────────────────

@@ -20,6 +20,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:glucotrack/features/patients/providers/patient_provider.dart';
 import 'package:glucotrack/features/measurements/providers/measurement_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../../../../app/router.dart';
 import '../../../../core/providers/app_mode_provider.dart';
@@ -28,8 +29,7 @@ import '../../../../features/patients/models/patient_model.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
-import '../../providers/profile_provider.dart'
-    hide personalPatientIdProvider, personalPatientProvider;
+import '../../providers/profile_provider.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ProfileScreen
@@ -406,7 +406,6 @@ class _EditPatientSheetState extends ConsumerState<_EditPatientSheet> {
     try {
       final repo = ref.read(patientRepositoryProvider);
 
-      // REPLACE with
       if (widget.patient == null) {
         final newPatient = PatientModel(
           fullName: _nameCtrl.text.trim(),
@@ -416,8 +415,8 @@ class _EditPatientSheetState extends ConsumerState<_EditPatientSheet> {
         );
         final newId = await repo.insertPatient(newPatient);
 
-        // ← THIS was missing: persist the ID so personalPatientIdProvider
-        //   can find this patient on every future app launch.
+        // Persist the ID so personalPatientIdProvider can find this patient
+        // on every future app launch.
         await ref.read(personalPatientIdProvider.notifier).setId(newId);
       } else {
         // Update existing patient
@@ -436,6 +435,15 @@ class _EditPatientSheetState extends ConsumerState<_EditPatientSheet> {
 
       ref.invalidate(personalPatientProvider);
       if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      final message = e is DatabaseException && e.isUniqueConstraintError()
+          ? l10n.patientRegPhoneAlreadyRegistered
+          : l10n.commonSomethingWentWrong;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

@@ -15,6 +15,7 @@ import '../features/patients/view/screens/patient_registration_screen.dart';
 import '../features/profile/view/screens/profile_screen.dart';
 import '../features/reminders/view/screens/reminders_screen.dart';
 import '../features/splash/view/splash_screen.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'placeholder_screens.dart';
 
 // ── Route name constants ───────────────────────────────────────────────────
@@ -83,8 +84,46 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
 
     routes: _buildRoutes(),
+    errorBuilder: (context, state) => _RouteErrorScreen(state: state),
   );
 });
+
+// ── Error / unmatched-route screen ─────────────────────────────────────────
+
+class _RouteErrorScreen extends StatelessWidget {
+  const _RouteErrorScreen({required this.state});
+  final GoRouterState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.routeErrorTitle)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(l10n.routeErrorMessage, textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () => context.go('/splash'),
+                child: Text(l10n.routeErrorGoHome),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 

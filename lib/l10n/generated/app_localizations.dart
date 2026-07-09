@@ -98,6 +98,30 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @commonSomethingWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get commonSomethingWentWrong;
+
+  /// No description provided for @routeErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Page not found'**
+  String get routeErrorTitle;
+
+  /// No description provided for @routeErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The screen you\'re looking for doesn\'t exist.'**
+  String get routeErrorMessage;
+
+  /// No description provided for @routeErrorGoHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get routeErrorGoHome;
+
   /// No description provided for @glucoseZoneHypoglycemia.
   ///
   /// In en, this message translates to:
@@ -253,6 +277,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nurse-operated, multiple patients'**
   String get modeSelectionClinicSubtitle;
+
+  /// No description provided for @modeSelectionClinicComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get modeSelectionClinicComingSoon;
 
   /// No description provided for @clinicNavDashboard.
   ///
@@ -895,6 +925,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save & Continue'**
   String get patientRegSaveContinue;
+
+  /// No description provided for @patientRegPhoneAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone number is already registered to another patient.'**
+  String get patientRegPhoneAlreadyRegistered;
 
   /// No description provided for @profileUnknownName.
   ///

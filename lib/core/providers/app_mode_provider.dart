@@ -16,19 +16,14 @@ final appModeProvider = StateProvider<String?>((ref) => null);
 // ── Theme mode ─────────────────────────────────────────────────────────────
 
 /// Persisted theme mode notifier.
+///
+/// [build] returns the Light default for a bare `ProviderScope`; the real
+/// startup value is seeded from SharedPreferences in main.dart via
+/// `themeModeProvider.overrideWith(...)`, the same way [LanguageNotifier]
+/// is seeded — see `_SeededThemeModeNotifier`.
 class ThemeModeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() => ThemeMode.light;
-
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getString(AppConstants.themeModeKey);
-    state = switch (stored) {
-      'light' => ThemeMode.light,
-      'dark' => ThemeMode.dark,
-      _ => ThemeMode.light,
-    };
-  }
 
   Future<void> set(ThemeMode mode) async {
     state = mode;

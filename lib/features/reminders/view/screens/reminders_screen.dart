@@ -7,7 +7,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
-import '../../../../shared/widgets/ble_status_bar.dart';
 import '../../models/reminder_models.dart';
 import '../../providers/reminder_provider.dart';
 import '../../../../l10n/generated/app_localizations.dart';
@@ -20,7 +19,6 @@ class RemindersScreen extends ConsumerWidget {
     return Scaffold(
       body: Column(
         children: [
-          const BleStatusBar(),
           Expanded(
             child: ListView(
               padding: EdgeInsets.symmetric(

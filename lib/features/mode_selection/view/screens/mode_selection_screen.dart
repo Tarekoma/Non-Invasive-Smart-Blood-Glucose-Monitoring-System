@@ -124,10 +124,12 @@ class _ModeSelectionScreenState extends ConsumerState<ModeSelectionScreen>
                               icon:     Icons.local_hospital_outlined,
                               title:    l10n.modeSelectionClinicTitle,
                               subtitle: l10n.modeSelectionClinicSubtitle,
-                              onTap:    _saving
-                                  ? null
-                                  : () => _selectMode(AppConstants.modeClinic),
+                              // Clinic mode's screens are not built yet —
+                              // disabled rather than routed to unfinished
+                              // placeholders. Re-enable once implemented.
+                              onTap:    null,
                               isLoading: false,
+                              badge: l10n.modeSelectionClinicComingSoon,
                             ),
                           ];
                           return isWide
@@ -213,6 +215,7 @@ class _ModeCard extends StatefulWidget {
     required this.subtitle,
     required this.onTap,
     required this.isLoading,
+    this.badge,
   });
 
   final IconData  icon;
@@ -220,6 +223,10 @@ class _ModeCard extends StatefulWidget {
   final String    subtitle;
   final VoidCallback? onTap;
   final bool      isLoading;
+
+  /// Optional small label (e.g. "Coming soon") shown when the card has no
+  /// [onTap] — signals the mode is disabled rather than just unresponsive.
+  final String? badge;
 
   @override
   State<_ModeCard> createState() => _ModeCardState();
@@ -253,69 +260,91 @@ class _ModeCardState extends State<_ModeCard>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final disabled = widget.onTap == null && !widget.isLoading;
 
-    return GestureDetector(
-      onTapDown:   (_) => _pressCtrl.forward(),
-      onTapUp:     (_) => _pressCtrl.reverse(),
-      onTapCancel: ()  => _pressCtrl.reverse(),
-      onTap:       widget.onTap,
-      child: ScaleTransition(
-        scale: _scaleAnim,
-        child: Container(
-          padding:      EdgeInsets.symmetric(horizontal: 24.w, vertical: 28.h),
-          decoration: BoxDecoration(
-            color:        cs.surface.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(24.r),
-            boxShadow: [
-              BoxShadow(
-                color:       Colors.black.withValues(alpha: 0.18),
-                blurRadius:  24,
-                offset:      const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon circle
-              Container(
-                width:  68.w,
-                height: 68.w,
-                decoration: BoxDecoration(
-                  color:  cs.primary.withValues(alpha: 0.10),
-                  shape:  BoxShape.circle,
+    return Opacity(
+      opacity: disabled ? 0.6 : 1.0,
+      child: GestureDetector(
+        onTapDown:   (_) => _pressCtrl.forward(),
+        onTapUp:     (_) => _pressCtrl.reverse(),
+        onTapCancel: ()  => _pressCtrl.reverse(),
+        onTap:       widget.onTap,
+        child: ScaleTransition(
+          scale: _scaleAnim,
+          child: Container(
+            padding:      EdgeInsets.symmetric(horizontal: 24.w, vertical: 28.h),
+            decoration: BoxDecoration(
+              color:        cs.surface.withValues(alpha: 0.96),
+              borderRadius: BorderRadius.circular(24.r),
+              boxShadow: [
+                BoxShadow(
+                  color:       Colors.black.withValues(alpha: 0.18),
+                  blurRadius:  24,
+                  offset:      const Offset(0, 8),
                 ),
-                child: widget.isLoading
-                    ? Padding(
-                        padding: EdgeInsets.all(18.w),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: cs.primary,
-                        ),
-                      )
-                    : Icon(widget.icon, size: 36.w, color: cs.primary),
-              ),
-              SizedBox(height: 16.h),
-              Text(
-                widget.title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize:   18.sp,
-                  fontWeight: FontWeight.w700,
-                  color:      cs.onSurface,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon circle
+                Container(
+                  width:  68.w,
+                  height: 68.w,
+                  decoration: BoxDecoration(
+                    color:  cs.primary.withValues(alpha: 0.10),
+                    shape:  BoxShape.circle,
+                  ),
+                  child: widget.isLoading
+                      ? Padding(
+                          padding: EdgeInsets.all(18.w),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: cs.primary,
+                          ),
+                        )
+                      : Icon(widget.icon, size: 36.w, color: cs.primary),
                 ),
-              ),
-              SizedBox(height: 10.h),
-              Text(
-                widget.subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize:  13.sp,
-                  color:     cs.onSurface.withValues(alpha: 0.65),
-                  height:    1.4,
+                SizedBox(height: 16.h),
+                Text(
+                  widget.title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize:   18.sp,
+                    fontWeight: FontWeight.w700,
+                    color:      cs.onSurface,
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(height: 10.h),
+                Text(
+                  widget.subtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize:  13.sp,
+                    color:     cs.onSurface.withValues(alpha: 0.65),
+                    height:    1.4,
+                  ),
+                ),
+                if (widget.badge != null) ...[
+                  SizedBox(height: 10.h),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
+                    decoration: BoxDecoration(
+                      color: cs.onSurface.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                    child: Text(
+                      widget.badge!,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),

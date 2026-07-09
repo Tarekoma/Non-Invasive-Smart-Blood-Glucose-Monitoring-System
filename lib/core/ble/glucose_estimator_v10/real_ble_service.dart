@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'ble_models.dart';
 import 'ble_service.dart';
@@ -48,10 +49,48 @@ class RealBleService implements BleService {
   @override
   Future<void> startScan() => connect();
 
+  // ── Runtime permissions ────────────────────────────────────────
+  //
+  // Android's manifest-declared BLUETOOTH_SCAN/BLUETOOTH_CONNECT/
+  // ACCESS_FINE_LOCATION are "dangerous" permissions on API 23+ — declaring
+  // them in the manifest does not grant them. Without an explicit runtime
+  // request here, FlutterBluePlus.startScan() throws (or silently returns
+  // nothing) on every Android 12+ device. permission_handler internally
+  // no-ops requests for permissions that don't apply to the running OS
+  // version, so this is safe to call unconditionally on every connect().
+  Future<void> _ensurePermissions() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+
+    final statuses = await [
+      Permission.bluetoothScan,
+      Permission.bluetoothConnect,
+    ].request();
+
+    // Location matters only pre-Android-12 (BLUETOOTH_SCAN's
+    // neverForLocation flag makes it unnecessary on 12+, where the manifest
+    // also caps it with maxSdkVersion="30" so it isn't even requestable).
+    // Best-effort only: if it's denied on an OS version that actually needs
+    // it, the scan below simply finds no devices and the existing "device
+    // not found" error further down handles that without a false permission
+    // error on newer Android versions.
+    await Permission.locationWhenInUse.request();
+
+    final denied = statuses.values.any((s) => !s.isGranted && !s.isLimited);
+    if (denied) {
+      _log('required Bluetooth permissions denied: $statuses');
+      throw StateError(
+        'Bluetooth permission was denied. Enable it in system settings to '
+        'connect to your device.',
+      );
+    }
+  }
+
   // ── connect ───────────────────────────────────────────────────
 
   @override
   Future<void> connect() async {
+    await _ensurePermissions();
+
     final adapterState = await FlutterBluePlus.adapterState.first;
     if (adapterState != BluetoothAdapterState.on) {
       _log('adapter is off — aborting connect');

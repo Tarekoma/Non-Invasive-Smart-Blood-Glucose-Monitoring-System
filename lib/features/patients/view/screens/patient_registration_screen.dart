@@ -5,8 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../../../../app/router.dart';
+import '../../../../features/measurements/providers/measurement_provider.dart';
+import '../../../../features/profile/providers/profile_provider.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/loading_overlay.dart';
@@ -141,17 +144,38 @@ class _PatientRegistrationScreenState
       createdAt:        DateTime.now(),
     );
 
-    final id = await ref.read(patientNotifierProvider.notifier).save(patient);
-    if (!mounted) return;
+    try {
+      final id = await ref.read(patientNotifierProvider.notifier).save(patient);
+      if (!mounted) return;
 
-    if (widget.isPersonalSetup) {
-      context.goNamed(Routes.personalHome);
-    } else {
-      // Clinic: navigate to measure screen with the new patient id.
-      context.goNamed(
-        Routes.clinicMeasure,
-        pathParameters: {'patientId': id.toString()},
-      );
+      if (widget.isPersonalSetup) {
+        // Link the newly created patient so the rest of the app (home,
+        // readings, profile) can find it on this and every future launch.
+        await ref.read(personalPatientIdProvider.notifier).setId(id);
+        await ref.read(personalExtrasProvider.notifier).saveFromRegistration(
+              doctorName: _doctorNameCtrl.text.trim(),
+              doctorContact: _doctorContactCtrl.text.trim(),
+              emergencyContact: _emergencyCtrl.text.trim(),
+              calibration: double.tryParse(_calibrationCtrl.text.trim()) ?? 0.0,
+            );
+        if (!mounted) return;
+        context.goNamed(Routes.personalHome);
+      } else {
+        // Clinic: navigate to measure screen with the new patient id.
+        context.goNamed(
+          Routes.clinicMeasure,
+          pathParameters: {'patientId': id.toString()},
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      final message = e is DatabaseException && e.isUniqueConstraintError()
+          ? l10n.patientRegPhoneAlreadyRegistered
+          : l10n.commonSomethingWentWrong;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 

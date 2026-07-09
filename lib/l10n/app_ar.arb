@@ -1,6 +1,11 @@
 {
   "@@locale": "ar",
 
+  "commonSomethingWentWrong": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+  "routeErrorTitle": "الصفحة غير موجودة",
+  "routeErrorMessage": "الشاشة التي تبحث عنها غير موجودة.",
+  "routeErrorGoHome": "العودة",
+
   "glucoseZoneHypoglycemia": "نقص سكر الدم",
   "glucoseZoneNormal": "طبيعي",
   "glucoseZonePreDiabetic": "ما قبل السكري",
@@ -31,6 +36,7 @@
   "modeSelectionPersonalSubtitle": "تتبع مستوى السكر لديك ومؤشراتك الحيوية",
   "modeSelectionClinicTitle": "عيادة أو مستشفى",
   "modeSelectionClinicSubtitle": "بإشراف تمريضي لعدة مرضى",
+  "modeSelectionClinicComingSoon": "قريبًا",
 
   "clinicNavDashboard": "لوحة التحكم",
   "clinicNavNewPatient": "مريض جديد",
@@ -144,6 +150,7 @@
   "patientRegCalibrationOffsetHint": "0.0",
   "patientRegInvalidNumber": "أدخل رقمًا صحيحًا",
   "patientRegSaveContinue": "حفظ ومتابعة",
+  "patientRegPhoneAlreadyRegistered": "رقم الهاتف هذا مسجل بالفعل لمريض آخر.",
 
   "profileUnknownName": "غير معروف",
   "profileMemberSince": "عضو منذ {year}",

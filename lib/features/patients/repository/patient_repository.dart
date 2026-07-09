@@ -18,12 +18,16 @@ class PatientRepository {
   // ── Insert ─────────────────────────────────────────────────────
 
   /// Inserts a new patient and returns the auto-generated row id.
+  ///
+  /// Throws a [DatabaseException] (`isUniqueConstraintError() == true`) if
+  /// [patient.phone] already belongs to another patient — callers must
+  /// surface this rather than silently overwrite the existing record.
   Future<int> insertPatient(PatientModel patient) async {
     final db = await DatabaseHelper.instance.database;
     return db.insert(
       DbConstants.tablePatients,
       patient.toMap()..remove(DbConstants.colId),
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      conflictAlgorithm: ConflictAlgorithm.abort,
     );
   }
 

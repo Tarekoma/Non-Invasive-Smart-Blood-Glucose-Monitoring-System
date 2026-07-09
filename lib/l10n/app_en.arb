@@ -1,6 +1,11 @@
 {
   "@@locale": "en",
 
+  "commonSomethingWentWrong": "Something went wrong. Please try again.",
+  "routeErrorTitle": "Page not found",
+  "routeErrorMessage": "The screen you're looking for doesn't exist.",
+  "routeErrorGoHome": "Go back",
+
   "glucoseZoneHypoglycemia": "Hypoglycemia",
   "glucoseZoneNormal": "Normal",
   "glucoseZonePreDiabetic": "Pre-Diabetic",
@@ -37,6 +42,7 @@
   "modeSelectionPersonalSubtitle": "Track your own glucose and vitals",
   "modeSelectionClinicTitle": "Clinic / Hospital",
   "modeSelectionClinicSubtitle": "Nurse-operated, multiple patients",
+  "modeSelectionClinicComingSoon": "Coming soon",
 
   "clinicNavDashboard": "Dashboard",
   "clinicNavNewPatient": "New Patient",
@@ -168,6 +174,7 @@
   "patientRegCalibrationOffsetHint": "0.0",
   "patientRegInvalidNumber": "Enter a valid number",
   "patientRegSaveContinue": "Save & Continue",
+  "patientRegPhoneAlreadyRegistered": "This phone number is already registered to another patient.",
 
   "profileUnknownName": "Unknown",
   "profileMemberSince": "Member since {year}",
