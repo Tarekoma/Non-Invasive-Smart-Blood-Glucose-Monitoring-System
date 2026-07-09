@@ -4,7 +4,7 @@ import 'ble_models.dart';
 
 /// Controls the BLE flag — flip to false when hardware is ready.
 /// Zero other changes needed anywhere in the app.
-const bool kUseMockBle = false;
+const bool kUseMockBle = true;
 
 /// Abstract BLE service contract.
 ///
