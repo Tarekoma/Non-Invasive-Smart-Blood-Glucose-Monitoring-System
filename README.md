@@ -33,6 +33,19 @@ A **machine learning regression model** runs directly on the **ESP32 microcontro
 
 ---
 
+## 📸 Application Preview
+
+<div align="center">
+
+| Home Dashboard | Glucose Readings | Reminders | Profile |
+|---|---|---|---|
+|<img width="250" height="500" alt="image" src="https://github.com/user-attachments/assets/99d338b2-d6ff-44e0-80b1-7dff225968f7" /> | <img width="250" height="500" alt="image" src="https://github.com/user-attachments/assets/067d59f9-546d-4387-aa3b-72e88dbb4689" /> | <img width="250" height="500" alt="image" src="https://github.com/user-attachments/assets/693e6845-1e73-4081-96b1-5acc26cc0e06" /> | <img width="250" height="500" alt="image" src="https://github.com/user-attachments/assets/d0407c31-9ee2-42f6-a97c-b9a54083ac95" />
+
+
+</div>
+
+---
+
 ## 🔍 Problems We Solve
 
 | # | Problem |
