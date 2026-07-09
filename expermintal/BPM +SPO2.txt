@@ -1,0 +1,204 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include "MAX30105.h"
+#include "heartRate.h"
+
+// OLED Configuration
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// Sensor
+MAX30105 particleSensor;
+
+// State Variables
+bool isCollecting = false;
+unsigned long startTime = 0;
+const unsigned long collectionDuration = 20000;
+
+// BPM Logic
+long lastBeat = 0;
+float bpmSum = 0;
+int beatCount = 0;
+
+// SpO2 Logic
+float spo2Sum = 0;
+int spo2Samples = 0;
+
+// Waveform
+int xPos = 0;
+int lastY = 30;
+
+// Dynamic Zoom
+long minIR = 200000;
+long maxIR = 0;
+
+// SpO2 tracking
+long minRed = 200000;
+long maxRed = 0;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(8,9);
+
+  if(!display.begin(SSD1306_SWITCHCAPVCC,0x3C)){
+    while(1);
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0,0);
+  display.println("System Ready");
+  display.display();
+
+  if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) {
+    display.clearDisplay();
+    display.println("Sensor Not Found");
+    display.display();
+    while (1);
+  }
+
+  particleSensor.setup();
+  particleSensor.setPulseAmplitudeRed(0x0A);
+  particleSensor.setPulseAmplitudeGreen(0);
+}
+
+void loop() {
+
+  long irValue = particleSensor.getIR();
+  long redValue = particleSensor.getRed();
+
+  if (!isCollecting) {
+
+    display.clearDisplay();
+    display.setCursor(0,10);
+    display.setTextSize(1);
+    display.println("PLACE FINGER");
+    display.println("TO START SCAN...");
+    display.display();
+
+    if (irValue > 50000) {
+
+      isCollecting = true;
+      startTime = millis();
+
+      bpmSum = 0;
+      beatCount = 0;
+
+      spo2Sum = 0;
+      spo2Samples = 0;
+
+      xPos = 0;
+
+      minIR = 200000;
+      maxIR = 0;
+
+      minRed = 200000;
+      maxRed = 0;
+
+      display.clearDisplay();
+    }
+
+  } else {
+
+    unsigned long elapsed = millis() - startTime;
+
+    if (elapsed < collectionDuration) {
+
+      // --- Dynamic Zoom ---
+      if (irValue < minIR) minIR = irValue;
+      if (irValue > maxIR) maxIR = irValue;
+
+      if (redValue < minRed) minRed = redValue;
+      if (redValue > maxRed) maxRed = redValue;
+
+      if (maxIR - minIR < 400) maxIR = minIR + 400;
+      if (maxRed - minRed < 400) maxRed = minRed + 400;
+
+      int yPos = map(irValue, minIR, maxIR, 40, 0);
+      yPos = constrain(yPos,0,40);
+
+      display.drawLine(xPos-1,lastY,xPos,yPos,SSD1306_WHITE);
+      lastY = yPos;
+      xPos++;
+
+      if (xPos >= SCREEN_WIDTH) {
+        xPos = 0;
+        display.fillRect(0,0,128,41,SSD1306_BLACK);
+        minIR = irValue + 100;
+        maxIR = irValue - 100;
+      }
+
+      // --- TIMER ---
+      display.fillRect(0,45,128,20,SSD1306_BLACK);
+      display.setCursor(0,50);
+      display.setTextSize(1);
+      display.print("Scanning: ");
+      display.print((collectionDuration - elapsed)/1000);
+      display.print("s");
+      display.display();
+
+      // --- BPM ---
+      if (checkForBeat(irValue)) {
+
+        long delta = millis() - lastBeat;
+        lastBeat = millis();
+
+        float bpm = 60 / (delta / 1000.0);
+
+        if (bpm < 220 && bpm > 40) {
+          bpmSum += bpm;
+          beatCount++;
+        }
+
+        // --- SpO2 calculation ---
+        float acRed = maxRed - minRed;
+        float dcRed = redValue;
+
+        float acIR = maxIR - minIR;
+        float dcIR = irValue;
+
+        if(acIR > 0 && dcIR > 0){
+
+          float R = (acRed/dcRed) / (acIR/dcIR);
+          float spo2 = 110 - 25 * R;
+
+          if(spo2 > 70 && spo2 < 100){
+            spo2Sum += spo2;
+            spo2Samples++;
+          }
+        }
+      }
+
+    } else {
+
+      // --- FINAL RESULT ---
+
+      float finalAvgBPM = (beatCount > 0) ? bpmSum / beatCount : 0;
+      float finalSpO2 = (spo2Samples > 0) ? spo2Sum / spo2Samples : 0;
+
+      display.clearDisplay();
+
+      display.setTextSize(2);
+      display.setCursor(0,0);
+      display.print(finalAvgBPM,0);
+      display.println(" BPM");
+
+      display.setCursor(0,30);
+      display.print(finalSpO2,0);
+      display.println("% SpO2");
+
+      display.setTextSize(1);
+      display.setCursor(0,55);
+      display.println("Remove Finger");
+
+      display.display();
+
+      delay(7000);
+      isCollecting = false;
+    }
+  }
+}

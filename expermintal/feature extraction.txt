@@ -1,0 +1,357 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include "MAX30105.h"
+// heartRate.h no longer needed — replaced by drop detector below
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+MAX30105 particleSensor;
+
+// --- ADJUSTED PARAMETERS ---
+const unsigned long collectionDuration = 20000;
+const unsigned long stabilizationDelay = 4000;
+const float maxBpmDeviation = 25.0;
+const int minRequiredBeats = 6;
+
+// State Variables
+bool isCollecting = false;
+unsigned long startTime = 0;
+long lastBeat = 0;
+float bpmSum = 0;
+int beatCount = 0;
+float lastBpm = 0;
+int errorCounter = 0;
+
+// Drawing & Scaling
+int xPos = 0, lastY = 30;
+long minIR = 200000, maxIR = 0;
+
+// --- FEATURE EXTRACTION VARIABLES ---
+long  currentPeakIR        = 0;
+long  currentValleyIR      = 1000000;
+float pulseAreaAccumulator = 0;
+
+float systolicSum      = 0;
+float diastolicSum     = 0;
+float beatPulseAreaSum = 0;
+// ------------------------------------
+
+/* ================================================================
+   STEEP-DROP BEAT DETECTOR
+   ----------------------------------------------------------------
+   How it works:
+     Every sample we compute the slope over the last SLOPE_WIN
+     samples using a simple linear regression on the raw IR values.
+     When that slope drops below DROP_THRESHOLD (a large negative
+     value = fast falling edge) AND we are outside the refractory
+     period, we declare a beat.
+
+   Why slope over a window instead of single-sample difference?
+     A single-sample diff is very noisy. Averaging the slope over
+     ~5 samples (~50 ms) smooths noise while still catching the
+     sharp systolic-to-diastolic drop which unfolds over ~100 ms.
+
+   The threshold is adaptive: it is set to DROP_RATIO * the steepest
+   drop seen in the last ADAPT_BEATS beats, so it self-calibrates to
+   the signal strength without any manual tuning.
+   ================================================================ */
+
+#define SLOPE_WIN     5           // samples used for slope estimate (~50 ms @ 100 Hz)
+#define ADAPT_BEATS   8           // number of recent drops tracked for auto-threshold
+
+static long   sd_buf[SLOPE_WIN]; // circular buffer of recent IR values
+static int    sd_idx     = 0;
+static int    sd_filled  = 0;
+
+// Adaptive threshold: track the steepest drops seen recently
+static float  sd_drops[ADAPT_BEATS];  // ring buffer of recent peak drop magnitudes
+static int    sd_drop_idx   = 0;
+static int    sd_drop_filled = 0;
+
+// What fraction of the average steepest drop triggers a beat (lower = more sensitive)
+const float DROP_RATIO = 0.30f;
+
+// Refractory: same 400 ms floor as original code
+static unsigned long sd_last_beat_ms = 0;
+const unsigned long  SD_REFRACTORY_MS = 400;
+
+// State: are we currently riding a drop (to detect onset, not sustained drop)
+static bool  sd_in_drop  = false;
+
+// Minimum absolute slope to ever count as a drop (guards flat/no-finger signal)
+// At 100 Hz, 100 counts/sample = 10,000 counts/second — very conservative floor
+const float SD_MIN_SLOPE = 100.0f;
+
+void sd_reset() {
+  for (int i = 0; i < SLOPE_WIN;    i++) sd_buf[i]   = 0;
+  for (int i = 0; i < ADAPT_BEATS;  i++) sd_drops[i] = 0;
+  sd_idx          = 0;
+  sd_filled       = 0;
+  sd_drop_idx     = 0;
+  sd_drop_filled  = 0;
+  sd_last_beat_ms = 0;
+  sd_in_drop      = false;
+}
+
+// Returns true on the first sample of each steep downslope (= beat onset)
+bool sd_update(long irValue) {
+
+  // Push new sample into circular buffer
+  sd_buf[sd_idx] = irValue;
+  sd_idx = (sd_idx + 1) % SLOPE_WIN;
+  if (sd_filled < SLOPE_WIN) { sd_filled++; return false; } // still priming
+
+  // Compute slope: simple least-squares over the window
+  // For equally-spaced x = 0,1,...,N-1:
+  //   slope = (N*Σ(i*y) - Σi*Σy) / (N*Σ(i²) - (Σi)²)
+  // Pre-computed denominator for N=SLOPE_WIN=5: 5*10 - 10*10 / ... let's just compute it
+  float sum_xy = 0, sum_y = 0;
+  const int N = SLOPE_WIN;
+  // Σi = N*(N-1)/2, Σi² = N*(N-1)*(2N-1)/6
+  const float sum_x  = N * (N - 1) / 2.0f;
+  const float sum_x2 = N * (N - 1) * (2 * N - 1) / 6.0f;
+  const float denom  = N * sum_x2 - sum_x * sum_x;
+
+  for (int i = 0; i < N; i++) {
+    int buf_i = (sd_idx + i) % N; // oldest to newest
+    sum_xy += i * sd_buf[buf_i];
+    sum_y  += sd_buf[buf_i];
+  }
+  float slope = (N * sum_xy - sum_x * sum_y) / denom;
+  // slope is in IR counts per sample. Negative = falling signal.
+
+  // Compute adaptive threshold from recent drop history
+  float avg_drop = 0;
+  if (sd_drop_filled > 0) {
+    int count = (sd_drop_filled < ADAPT_BEATS) ? sd_drop_filled : ADAPT_BEATS;
+    for (int i = 0; i < count; i++) avg_drop += sd_drops[i];
+    avg_drop /= count;
+  }
+
+  // Dynamic threshold: use average of recent drops scaled by DROP_RATIO,
+  // but never go below the absolute minimum floor
+  float threshold = max(avg_drop * DROP_RATIO, SD_MIN_SLOPE);
+
+  // A steep drop = slope more negative than -threshold
+  bool dropping = (slope < -threshold);
+
+  bool beatDetected = false;
+  unsigned long now = millis();
+
+  if (dropping && !sd_in_drop) {
+    // Rising edge of a drop event — this is the beat onset
+    if ((now - sd_last_beat_ms) > SD_REFRACTORY_MS) {
+      beatDetected    = true;
+      sd_last_beat_ms = now;
+
+      // Record this drop magnitude for adaptive threshold
+      sd_drops[sd_drop_idx] = -slope; // store as positive magnitude
+      sd_drop_idx    = (sd_drop_idx + 1) % ADAPT_BEATS;
+      if (sd_drop_filled < ADAPT_BEATS) sd_drop_filled++;
+    }
+  }
+
+  sd_in_drop = dropping;
+
+  return beatDetected;
+}
+
+/* ================================================================ */
+
+
+void setup() {
+  Wire.begin(8, 9);
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+
+  if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) while (1);
+
+  byte ledBrightness = 60;
+  byte sampleAverage = 4;
+  byte ledMode = 2;
+  int sampleRate = 100;
+  int pulseWidth = 411;
+  int adcRange = 4096;
+
+  particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange);
+}
+
+void loop() {
+  long irValue = particleSensor.getIR();
+
+  if (!isCollecting) {
+    if (millis() % 2000 < 1000) {
+      showPrompt("WAITING", "PLACE FINGER\nSTAY STILL");
+    }
+    if (irValue > 50000) startNewScan();
+  } else {
+    processScan(irValue);
+  }
+}
+
+void startNewScan() {
+  isCollecting = true;
+  startTime = millis();
+  bpmSum = 0;
+  beatCount = 0;
+  lastBpm = 0;
+  errorCounter = 0;
+  xPos = 0;
+  minIR = 200000;
+  maxIR = 0;
+
+  currentPeakIR        = 0;
+  currentValleyIR      = 1000000;
+  pulseAreaAccumulator = 0;
+  systolicSum          = 0;
+  diastolicSum         = 0;
+  beatPulseAreaSum     = 0;
+
+  sd_reset();
+
+  display.clearDisplay();
+}
+
+void processScan(long irValue) {
+  unsigned long elapsed = millis() - startTime;
+
+  // --- FEATURE TRACKING ---
+  if (irValue > currentPeakIR)   currentPeakIR   = irValue;
+  if (irValue < currentValleyIR) currentValleyIR = irValue;
+  pulseAreaAccumulator += irValue;
+  // ------------------------
+
+  if (elapsed < collectionDuration) {
+    updateScaling(irValue);
+    drawWave(irValue);
+    updateOLEDStatus(elapsed);
+
+    if (sd_update(irValue)) {           // ← steep-drop detector replaces checkForBeat()
+      long delta = millis() - lastBeat;
+      lastBeat = millis();
+      float currentBpm = 60 / (delta / 1000.0);
+
+      if (elapsed >= stabilizationDelay) {
+        if (currentBpm > 45 && currentBpm < 180) {
+
+          if (lastBpm > 0 && abs(currentBpm - lastBpm) > maxBpmDeviation) {
+            errorCounter++;
+          } else {
+            bpmSum += currentBpm;
+            beatCount++;
+            lastBpm = currentBpm;
+
+            // --- STORE FEATURES FOR THIS ACCEPTED BEAT ---
+            systolicSum      += currentPeakIR;
+            diastolicSum     += currentValleyIR;
+            beatPulseAreaSum += pulseAreaAccumulator;
+
+            currentPeakIR        = 0;
+            currentValleyIR      = 1000000;
+            pulseAreaAccumulator = 0;
+            // ---------------------------------------------
+          }
+        }
+      }
+    }
+  } else {
+    finalizeScan();
+  }
+}
+
+void finalizeScan() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+
+  bool notEnoughData = (beatCount < minRequiredBeats);
+
+  if (notEnoughData) {
+    display.println("REJECTED");
+    display.println("-----------");
+    display.println("Signal too weak!");
+    display.println("\nTry: Lighter touch.");
+    display.display();
+  } else {
+    float finalAvg     = bpmSum           / beatCount;
+    float avgSystolic  = systolicSum      / beatCount;
+    float avgDiastolic = diastolicSum     / beatCount;
+    float avgPulseArea = beatPulseAreaSum / beatCount;
+
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.println("SCAN VALID");
+
+    display.setCursor(0, 12);
+    display.print("HR:  ");
+    display.print((int)finalAvg);
+    display.println(" BPM");
+
+    display.setCursor(0, 24);
+    display.print("Sys: ");
+    display.println((long)avgSystolic);
+
+    display.setCursor(0, 36);
+    display.print("Dia: ");
+    display.println((long)avgDiastolic);
+
+    display.setCursor(0, 48);
+    display.print("Area:");
+    display.println((long)avgPulseArea);
+
+    display.display();
+  }
+
+  delay(6000);
+  isCollecting = false;
+}
+
+// --- HELPERS ---
+void updateScaling(long irValue) {
+  if (irValue < minIR) minIR = irValue;
+  if (irValue > maxIR) maxIR = irValue;
+  if (maxIR - minIR < 500) maxIR = minIR + 500;
+}
+
+void drawWave(long irValue) {
+  int yPos = map(irValue, minIR, maxIR, 40, 5);
+  yPos = constrain(yPos, 5, 40);
+  display.drawLine(xPos - 1, lastY, xPos, yPos, SSD1306_WHITE);
+  lastY = yPos;
+  xPos++;
+  if (xPos >= SCREEN_WIDTH) {
+    xPos = 0;
+    display.fillRect(0, 0, 128, 42, SSD1306_BLACK);
+    minIR = irValue + 200; maxIR = irValue - 200;
+  }
+}
+
+void updateOLEDStatus(unsigned long elapsed) {
+  display.fillRect(0, 45, 128, 19, SSD1306_BLACK);
+  display.setCursor(0, 52);
+  display.setTextSize(1);
+  if (elapsed < stabilizationDelay) display.print("CALIBRATING...");
+  else {
+    display.print("LIVE: ");
+    display.print((collectionDuration - elapsed) / 1000);
+    display.print("s  B:");
+    display.print(beatCount);
+  }
+  display.display();
+}
+
+void showPrompt(const char* top, const char* bottom) {
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setCursor(0, 0);
+  display.println(top);
+  display.setTextSize(1);
+  display.setCursor(0, 32);
+  display.println(bottom);
+  display.display();
+}
